@@ -4,10 +4,18 @@ use std::process;
 use std::path::Path;
 use std::fs::File;
 
+
 fn run(source: String) {
     println!("{}", source);
 }
 
+fn report(line: i32, place: &str, message: &str) {
+    eprintln!("[line {}] Error {}: {}", line, place, message);
+}
+
+fn error(line: i32, message: &str) {
+    report(line, "", message);
+}
 
 fn run_file<P: ?Sized>(path: &P)
 where
@@ -26,7 +34,17 @@ where
 }
 
 fn run_prompt() {
-    // reads a line of input from the user on the command line and returns the result.
+    loop {
+        let mut input = String::new();
+        println!("Enter your code:");
+        io::stdin().read_line(&mut input).unwrap();
+
+        if input.trim().is_empty() {
+            break;
+        }
+
+        run(input);
+    }
 }
 
 fn main() {
