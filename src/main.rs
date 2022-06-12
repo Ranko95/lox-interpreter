@@ -3,6 +3,9 @@ use std::process;
 use std::path::Path;
 
 mod lox;
+mod token_type;
+mod token;
+mod scanner;
 
 use lox::Lox;
 

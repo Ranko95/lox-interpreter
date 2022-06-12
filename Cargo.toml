@@ -1,5 +1,5 @@
 [package]
-name = "lox-interpreter"
+name = "jlox"
 version = "0.1.0"
 edition = "2021"
 

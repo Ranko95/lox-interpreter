@@ -3,6 +3,8 @@ use std::path::Path;
 use std::fs::File;
 use std::process;
 
+use crate::scanner::Scanner;
+
 
 pub struct Lox {
   had_error: bool,
@@ -16,15 +18,12 @@ impl Lox {
   }
 
   pub fn run(&self, source: String) {
-    println!("{}", source);
-  }
-  
-  pub fn report(&self, line: i32, place: &str, message: &str) {
-    eprintln!("[line {}] Error {}: {}", line, place, message);
-  }
-  
-  pub fn error(&self, line: i32, message: &str) {
-    self.report(line, "", message);
+    let mut scanner = Scanner::new(&source);
+    let tokens = scanner.scan_tokens();
+
+    tokens.iter().for_each(|t| -> () {
+      println!("{}", t);
+    });
   }
   
   pub fn run_file<P: ?Sized>(&self, path: &P)
@@ -54,7 +53,7 @@ impl Lox {
       io::stdin().read_line(&mut input).unwrap();
   
       if input.trim().is_empty() {
-          break;
+        break;
       }
   
       self.run(input);
@@ -62,4 +61,12 @@ impl Lox {
       self.had_error = false;
     }
   }
+}
+
+fn report(line: u32, place: &str, message: &str) {
+  eprintln!("[line {}] Error {}: {}", line, place, message);
+}
+
+pub fn error(line: u32, message: &str) {
+  report(line, "", message);
 }
