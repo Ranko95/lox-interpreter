@@ -1,5 +1,6 @@
 use std::fmt::{ Display, self, Debug };
 
+#[derive(Clone, Copy)]
 pub enum TokenType {
   // Single-character tokens.
   LeftParen, RightParen, LeftBrace, RightBrace,
@@ -12,7 +13,7 @@ pub enum TokenType {
   Less, LessEqual,
 
   // Literals.
-  Identifier, String { literal: String }, Number { literal: f64 },
+  Identifier, String, Number,
 
   // Keywords.
   And, Class, Else, False, Fun, For, If, Nil, Or,
@@ -44,8 +45,8 @@ impl Debug for TokenType {
       Self::Less => write!(f, "Less"),
       Self::LessEqual => write!(f, "LessEqual"),
       Self::Identifier => write!(f, "Identifier"),
-      Self::String { literal } => write!(f, "String literal: {}", literal),
-      Self::Number { literal } => write!(f, "Number literal: {}", literal),
+      Self::Number => write!(f, "Number"),
+      Self::String => write!(f, "String"),
       Self::And => write!(f, "And"),
       Self::Class => write!(f, "Class"),
       Self::Else => write!(f, "Else"),
