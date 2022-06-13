@@ -1,4 +1,4 @@
-# Lox Interpreter
+# Lox TREE-WALK Interpreter
 
 Following the Robert Nystrom book [Crafting Interpreters](http://www.craftinginterpreters.com/), in Rust.
 
