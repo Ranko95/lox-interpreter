@@ -121,6 +121,33 @@ impl Scanner<'_> {
                     while self.peek() != '\n' && !self.is_at_end() {
                         self.advance();
                     }
+                } else if self.match_char('*') {
+                    // A multiline comment goes untill closing */ sign
+                    // Multiline comments can be nested
+                    let mut stack = vec![self.line];
+
+                    while stack.len() != 0 && !self.is_at_end() {
+                        let char = self.peek();
+                        let next_char = self.peek_next();
+                        if char == '*' && next_char == '/' {
+                            stack.pop();
+                            self.advance();
+                        } else if char == '/' && next_char == '*' {
+                            stack.push(self.line);
+                            self.advance();
+                        } else if char == '\n' {
+                            self.line += 1;
+                        }
+                        self.advance();
+                    }
+
+                    if stack.len() != 0 && self.is_at_end() {
+                        let line = stack.pop().unwrap_or(self.line);
+                        lox::error(
+                            line,
+                            "Don't forget to close a multiline comment with closing sign: '*/'.",
+                        );
+                    }
                 } else {
                     self.add_token(TokenType::Slash);
                 }
@@ -141,7 +168,7 @@ impl Scanner<'_> {
     }
 
     fn is_at_end(&self) -> bool {
-        self.current >= self.source_length.try_into().unwrap()
+        self.current >= self.source_length
     }
 
     fn match_char(&mut self, expected: char) -> bool {
@@ -154,6 +181,7 @@ impl Scanner<'_> {
             .chars()
             .nth(self.current.try_into().unwrap())
             .unwrap();
+
         if current_char != expected {
             return false;
         }
@@ -175,7 +203,7 @@ impl Scanner<'_> {
     }
 
     fn peek_next(&self) -> char {
-        if self.current >= self.source_length {
+        if self.is_at_end() {
             return '\0';
         }
 
