@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::lox;
 use crate::token::Token;
-use crate::token_type::TokenType;
+use crate::token_type::{Literal, TokenType};
 
 const RADIX: u32 = 10;
 
@@ -53,7 +53,8 @@ impl Scanner<'_> {
             self.scan_token();
         }
 
-        self.tokens.push(Token::new(TokenType::EOF, "", self.line));
+        self.tokens
+            .push(Token::new(TokenType::EOF, "", None, self.line));
 
         &self.tokens
     }
@@ -69,8 +70,13 @@ impl Scanner<'_> {
     }
 
     fn add_token(&mut self, token_type: TokenType) {
+        self.add_token_with_literal(token_type, None);
+    }
+
+    fn add_token_with_literal(&mut self, token_type: TokenType, literal: Option<Literal>) {
         let text = &self.source[self.start..self.current];
-        self.tokens.push(Token::new(token_type, text, self.line));
+        self.tokens
+            .push(Token::new(token_type, text, literal, self.line));
     }
 
     fn scan_token(&mut self) {
@@ -229,7 +235,10 @@ impl Scanner<'_> {
 
         self.advance();
 
-        self.add_token(TokenType::String);
+        // Trim the surrounding quotes.
+        let value = &self.source[self.start + 1..self.current - 1];
+
+        self.add_token_with_literal(TokenType::String, Some(Literal::String(value.to_string())));
     }
 
     fn number(&mut self) {
@@ -245,7 +254,12 @@ impl Scanner<'_> {
             }
         }
 
-        self.add_token(TokenType::Number);
+        let value = &self.source[self.start..self.current];
+
+        self.add_token_with_literal(
+            TokenType::Number,
+            Some(Literal::Number(value.parse().unwrap())),
+        );
     }
 
     fn identifier(&mut self) {

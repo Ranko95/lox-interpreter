@@ -52,6 +52,11 @@ pub enum TokenType {
     EOF,
 }
 
+pub enum Literal {
+    Number(f64),
+    String(String),
+}
+
 impl Debug for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
