@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::lox;
 use crate::token::Token;
 use crate::token_type::{Literal, TokenType};
+use crate::error_reporter;
 
 const RADIX: u32 = 10;
 
@@ -149,7 +149,7 @@ impl Scanner<'_> {
 
                     if stack.len() != 0 && self.is_at_end() {
                         let line = stack.pop().unwrap_or(self.line);
-                        lox::error(
+                        error_reporter::error(
                             line,
                             "Don't forget to close a multiline comment with closing sign: '*/'.",
                         );
@@ -167,7 +167,7 @@ impl Scanner<'_> {
                 } else if self.is_alpha(c) {
                     self.identifier();
                 } else {
-                    lox::error(self.line, "Unexpected character.");
+                    error_reporter::error(self.line, "Unexpected character.");
                 }
             }
         }
@@ -229,7 +229,7 @@ impl Scanner<'_> {
         }
 
         if self.is_at_end() {
-            lox::error(self.line, "Unterminated string.");
+            error_reporter::error(self.line, "Unterminated string.");
             return;
         }
 

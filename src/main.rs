@@ -6,6 +6,7 @@ mod lox;
 mod scanner;
 mod token;
 mod token_type;
+mod error_reporter;
 
 use lox::Lox;
 
@@ -16,7 +17,7 @@ fn main() {
     let args_len = args.len();
 
     if args_len > 2 {
-        println!("Usage: jlox [script]");
+        println!("Usage: rlox [script]");
         process::exit(64);
     } else if args_len == 2 {
         lox.run_file(Path::new(&args[1]));
