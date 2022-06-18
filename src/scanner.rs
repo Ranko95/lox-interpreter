@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
+use crate::error_reporter;
 use crate::token::Token;
 use crate::token_type::{Literal, TokenType};
-use crate::error_reporter;
 
 const RADIX: u32 = 10;
 
@@ -73,7 +73,11 @@ impl Scanner<'_> {
         self.add_token_with_literal(token_type, None);
     }
 
-    fn add_token_with_literal(&mut self, token_type: TokenType, literal: Option<Literal>) {
+    fn add_token_with_literal(
+        &mut self,
+        token_type: TokenType,
+        literal: Option<Literal>,
+    ) {
         let text = &self.source[self.start..self.current];
         self.tokens
             .push(Token::new(token_type, text, literal, self.line));
@@ -238,7 +242,10 @@ impl Scanner<'_> {
         // Trim the surrounding quotes.
         let value = &self.source[self.start + 1..self.current - 1];
 
-        self.add_token_with_literal(TokenType::String, Some(Literal::String(value.to_string())));
+        self.add_token_with_literal(
+            TokenType::String,
+            Some(Literal::String(value.to_string())),
+        );
     }
 
     fn number(&mut self) {

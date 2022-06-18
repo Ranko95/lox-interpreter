@@ -108,3 +108,12 @@ impl Display for TokenType {
         write!(f, "{:?}", self)
     }
 }
+
+impl Display for Literal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Literal::Number(v) => write!(f, "{v}"),
+            Literal::String(v) => write!(f, "{v}"),
+        }
+    }
+}

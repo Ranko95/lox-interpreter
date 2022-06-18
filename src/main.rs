@@ -2,11 +2,13 @@ use std::env;
 use std::path::Path;
 use std::process;
 
+mod ast;
+mod ast_printer;
+mod error_reporter;
 mod lox;
 mod scanner;
 mod token;
 mod token_type;
-mod error_reporter;
 
 use lox::Lox;
 

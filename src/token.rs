@@ -3,10 +3,10 @@ use std::fmt::{self, Display};
 use crate::token_type::{Literal, TokenType};
 
 pub struct Token<'a> {
-    token_type: TokenType,
-    lexeme: &'a str,
-    literal: Option<Literal>,
-    line: u32,
+    pub token_type: TokenType,
+    pub lexeme: &'a str,
+    pub literal: Option<Literal>,
+    pub line: u32,
 }
 
 impl Token<'_> {
