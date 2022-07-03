@@ -1,13 +1,15 @@
+use std::rc::Rc;
+
 use crate::{token::Token, token_type::Literal};
 
-pub enum Expr<'a> {
-    Binary(BinaryExpr<'a>),
-    Grouping(GroupingExpr<'a>),
+pub enum Expr {
+    Binary(BinaryExpr),
+    Grouping(GroupingExpr),
     Literal(LiteralExpr),
-    Unary(UnaryExpr<'a>),
+    Unary(UnaryExpr),
 }
 
-impl Expr<'_> {
+impl Expr {
     pub fn accept<T>(&self, expr_visitor: &dyn ExprVisitor<T>) -> T {
         match self {
             Expr::Binary(be) => be.accept(expr_visitor),
@@ -18,18 +20,14 @@ impl Expr<'_> {
     }
 }
 
-pub struct BinaryExpr<'a> {
-    pub left: Box<Expr<'a>>,
-    pub operator: Token<'a>,
-    pub right: Box<Expr<'a>>,
+pub struct BinaryExpr {
+    pub left: Rc<Expr>,
+    pub operator: Token,
+    pub right: Rc<Expr>,
 }
 
-impl BinaryExpr<'_> {
-    pub fn new<'a>(
-        left: Box<Expr<'a>>,
-        operator: Token<'a>,
-        right: Box<Expr<'a>>,
-    ) -> BinaryExpr<'a> {
+impl BinaryExpr {
+    pub fn new(left: Rc<Expr>, operator: Token, right: Rc<Expr>) -> BinaryExpr {
         BinaryExpr {
             left,
             operator,
@@ -38,12 +36,12 @@ impl BinaryExpr<'_> {
     }
 }
 
-pub struct GroupingExpr<'a> {
-    pub expression: Box<Expr<'a>>,
+pub struct GroupingExpr {
+    pub expression: Rc<Expr>,
 }
 
-impl GroupingExpr<'_> {
-    pub fn new<'a>(expression: Box<Expr<'a>>) -> GroupingExpr<'a> {
+impl GroupingExpr {
+    pub fn new(expression: Rc<Expr>) -> GroupingExpr {
         GroupingExpr { expression }
     }
 }
@@ -58,13 +56,13 @@ impl LiteralExpr {
     }
 }
 
-pub struct UnaryExpr<'a> {
-    pub operator: Token<'a>,
-    pub right: Box<Expr<'a>>,
+pub struct UnaryExpr {
+    pub operator: Token,
+    pub right: Rc<Expr>,
 }
 
-impl UnaryExpr<'_> {
-    pub fn new<'a>(operator: Token<'a>, right: Box<Expr<'a>>) -> UnaryExpr<'a> {
+impl UnaryExpr {
+    pub fn new(operator: Token, right: Rc<Expr>) -> UnaryExpr {
         UnaryExpr { operator, right }
     }
 }
@@ -76,13 +74,13 @@ pub trait ExprVisitor<T> {
     fn visit_unary_expr(&self, expr: &UnaryExpr) -> T;
 }
 
-impl BinaryExpr<'_> {
+impl BinaryExpr {
     pub fn accept<T>(&self, visitor: &dyn ExprVisitor<T>) -> T {
         visitor.visit_binary_expr(self)
     }
 }
 
-impl GroupingExpr<'_> {
+impl GroupingExpr {
     pub fn accept<T>(&self, visitor: &dyn ExprVisitor<T>) -> T {
         visitor.visit_grouping_expr(self)
     }
@@ -94,7 +92,7 @@ impl LiteralExpr {
     }
 }
 
-impl UnaryExpr<'_> {
+impl UnaryExpr {
     pub fn accept<T>(&self, visitor: &dyn ExprVisitor<T>) -> T {
         visitor.visit_unary_expr(self)
     }

@@ -3,6 +3,8 @@ use std::io::{self, BufReader, Read};
 use std::path::Path;
 use std::process;
 
+use crate::ast_printer::AstPrinter;
+use crate::parser::Parser;
 use crate::scanner::Scanner;
 
 pub struct Lox {
@@ -14,16 +16,25 @@ impl Lox {
         Lox { had_error: false }
     }
 
-    pub fn run(&self, source: String) {
+    pub fn run(&mut self, source: String) {
         let mut scanner = Scanner::new(&source);
         let tokens = scanner.scan_tokens();
 
-        tokens.iter().for_each(|t| -> () {
-            println!("{}", t);
-        });
+        let mut parser = Parser::new(tokens);
+        let ast_printer = AstPrinter::new();
+
+        let _ = match parser.parse() {
+            Ok(e) => {
+                println!("{}", ast_printer.print(&e));
+            }
+            Err(_) => {
+                self.had_error = true;
+                return;
+            }
+        };
     }
 
-    pub fn run_file<P: ?Sized>(&self, path: &P)
+    pub fn run_file<P: ?Sized>(&mut self, path: &P)
     where
         P: AsRef<Path>,
     {

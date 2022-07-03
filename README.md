@@ -6,8 +6,8 @@ An overview of the lox language can be found [here](http://www.craftinginterpret
 
 # Roadmap
 - [X] Tokens and lexing
-- [ ] Abstract syntax trees
-- [ ] Recursive descent parsing
+- [X] Abstract syntax trees
+- [X] Recursive descent parsing
 - [ ] Prefix and infix expressions
 - [ ] Runtime representation of objects
 - [ ] Interpreting code using the Visitor pattern

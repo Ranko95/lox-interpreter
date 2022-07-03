@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::error_reporter;
+use crate::error_reporter::LoxError;
 use crate::token::Token;
 use crate::token_type::{Literal, TokenType};
 
@@ -9,7 +9,7 @@ const RADIX: u32 = 10;
 pub struct Scanner<'a> {
     source: &'a str,
     source_length: usize,
-    tokens: Vec<Token<'a>>,
+    tokens: Vec<Token>,
     keywords: HashMap<&'a str, TokenType>,
     start: usize,
     current: usize,
@@ -53,8 +53,12 @@ impl Scanner<'_> {
             self.scan_token();
         }
 
-        self.tokens
-            .push(Token::new(TokenType::EOF, "", None, self.line));
+        self.tokens.push(Token::new(
+            TokenType::EOF,
+            "".to_string(),
+            None,
+            self.line,
+        ));
 
         &self.tokens
     }
@@ -78,7 +82,7 @@ impl Scanner<'_> {
         token_type: TokenType,
         literal: Option<Literal>,
     ) {
-        let text = &self.source[self.start..self.current];
+        let text = self.source[self.start..self.current].to_string();
         self.tokens
             .push(Token::new(token_type, text, literal, self.line));
     }
@@ -153,9 +157,9 @@ impl Scanner<'_> {
 
                     if stack.len() != 0 && self.is_at_end() {
                         let line = stack.pop().unwrap_or(self.line);
-                        error_reporter::error(
+                        LoxError::scan_error(
                             line,
-                            "Don't forget to close a multiline comment with closing sign: '*/'.",
+                            "Don't forget to close a multiline comment with closing sign: '*/'.".to_string()
                         );
                     }
                 } else {
@@ -171,7 +175,10 @@ impl Scanner<'_> {
                 } else if self.is_alpha(c) {
                     self.identifier();
                 } else {
-                    error_reporter::error(self.line, "Unexpected character.");
+                    LoxError::scan_error(
+                        self.line,
+                        "Unexpected character.".to_string(),
+                    );
                 }
             }
         }
@@ -233,7 +240,7 @@ impl Scanner<'_> {
         }
 
         if self.is_at_end() {
-            error_reporter::error(self.line, "Unterminated string.");
+            LoxError::scan_error(self.line, "Unterminated string.".to_string());
             return;
         }
 

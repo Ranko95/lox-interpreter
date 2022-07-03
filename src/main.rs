@@ -6,6 +6,7 @@ mod ast;
 mod ast_printer;
 mod error_reporter;
 mod lox;
+mod parser;
 mod scanner;
 mod token;
 mod token_type;

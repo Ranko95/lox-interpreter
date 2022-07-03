@@ -1,6 +1,6 @@
 use std::fmt::{self, Debug, Display};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,
@@ -29,22 +29,22 @@ pub enum TokenType {
     Identifier,
     String,
     Number,
+    False,
+    True,
+    Nil,
 
     // Keywords.
     And,
     Class,
     Else,
-    False,
     Fun,
     For,
     If,
-    Nil,
     Or,
     Print,
     Return,
     Super,
     This,
-    True,
     Var,
     While,
 
@@ -52,9 +52,12 @@ pub enum TokenType {
     EOF,
 }
 
+#[derive(Clone)]
 pub enum Literal {
     Number(f64),
     String(String),
+    Bool(bool),
+    Nil,
 }
 
 impl Debug for TokenType {
@@ -114,6 +117,14 @@ impl Display for Literal {
         match self {
             Literal::Number(v) => write!(f, "{v}"),
             Literal::String(v) => write!(f, "{v}"),
+            Literal::Bool(v) => {
+                if *v {
+                    write!(f, "true")
+                } else {
+                    write!(f, "false")
+                }
+            }
+            Literal::Nil => write!(f, "nil"),
         }
     }
 }
