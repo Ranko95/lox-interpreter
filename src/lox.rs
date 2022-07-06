@@ -2,18 +2,24 @@ use std::fs::File;
 use std::io::{self, BufReader, Read};
 use std::path::Path;
 use std::process;
+use std::rc::Rc;
 
 use crate::ast_printer::AstPrinter;
+use crate::interpreter::Interpreter;
 use crate::parser::Parser;
 use crate::scanner::Scanner;
 
 pub struct Lox {
     had_error: bool,
+    had_runtime_error: bool,
 }
 
 impl Lox {
     pub fn new() -> Lox {
-        Lox { had_error: false }
+        Lox {
+            had_error: false,
+            had_runtime_error: false,
+        }
     }
 
     pub fn run(&mut self, source: String) {
@@ -23,15 +29,25 @@ impl Lox {
         let mut parser = Parser::new(tokens);
         let ast_printer = AstPrinter::new();
 
-        let _ = match parser.parse() {
+        let expr = match parser.parse() {
             Ok(e) => {
                 println!("{}", ast_printer.print(&e));
+                e
             }
             Err(_) => {
                 self.had_error = true;
                 return;
             }
         };
+
+        let interpreter = Interpreter::new();
+        match interpreter.interpret(&Rc::new(expr)) {
+            Ok(v) => println!("{v}"),
+            Err(_) => {
+                self.had_runtime_error = true;
+                return;
+            }
+        }
     }
 
     pub fn run_file<P: ?Sized>(&mut self, path: &P)
@@ -51,6 +67,9 @@ impl Lox {
 
         if self.had_error {
             process::exit(65);
+        }
+        if self.had_runtime_error {
+            process::exit(70);
         }
     }
 

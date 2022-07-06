@@ -3,6 +3,7 @@ use crate::{token::Token, token_type::TokenType};
 pub enum LoxError {
     ScanError { line: u32, message: String },
     ParseError { token: Token, message: String },
+    RuntimeError { token: Token, message: String },
 }
 
 impl LoxError {
@@ -14,6 +15,12 @@ impl LoxError {
 
     pub fn parse_error(token: Token, message: String) -> LoxError {
         let error = LoxError::ParseError { token, message };
+        error.report();
+        error
+    }
+
+    pub fn runtime_error(token: Token, message: String) -> LoxError {
+        let error = LoxError::RuntimeError { token, message };
         error.report();
         error
     }
@@ -35,6 +42,16 @@ impl LoxError {
                         "[line {}] Error {}: {}",
                         token.line, place, message
                     );
+                }
+            }
+            LoxError::RuntimeError { token, message } => {
+                if token.token_type == TokenType::EOF {
+                    eprintln!(
+                        "[line {}] Error {}: {}",
+                        token.line, "at end", message
+                    );
+                } else {
+                    eprintln!("{} \n[line {}]", message, token.line);
                 }
             }
         }

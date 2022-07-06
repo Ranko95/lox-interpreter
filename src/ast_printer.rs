@@ -8,7 +8,7 @@ pub struct AstPrinter;
 
 impl AstPrinter {
     pub fn new() -> AstPrinter {
-        AstPrinter {}
+        AstPrinter
     }
 
     pub fn print(&self, expr: &Expr) -> String {

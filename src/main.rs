@@ -5,6 +5,7 @@ use std::process;
 mod ast;
 mod ast_printer;
 mod error_reporter;
+mod interpreter;
 mod lox;
 mod parser;
 mod scanner;
