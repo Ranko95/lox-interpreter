@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
-use crate::ast::{
+use crate::error_reporter::LoxError;
+use crate::expr::{
     BinaryExpr, Expr, ExprVisitor, GroupingExpr, LiteralExpr, UnaryExpr,
 };
-use crate::error_reporter::LoxError;
 use crate::token::Token;
 use crate::token_type::{Literal, TokenType};
 
