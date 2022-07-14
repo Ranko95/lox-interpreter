@@ -4,6 +4,7 @@ use crate::error_reporter::LoxError;
 use crate::expr::{
     BinaryExpr, Expr, ExprVisitor, GroupingExpr, LiteralExpr, UnaryExpr,
 };
+use crate::stmt::{Stmt, StmtVisitor};
 use crate::token::Token;
 use crate::token_type::{Literal, TokenType};
 
@@ -145,20 +146,44 @@ impl ExprVisitor<Result<Literal, LoxError>> for Interpreter {
     }
 }
 
+impl StmtVisitor<Result<(), LoxError>> for Interpreter {
+    fn visit_expression_stmt(
+        &self,
+        stmt: &crate::stmt::ExpressionStmt,
+    ) -> Result<(), LoxError> {
+        self.evaluate(&stmt.expression)?;
+        Ok(())
+    }
+
+    fn visit_print_stmt(
+        &self,
+        stmt: &crate::stmt::PrintStmt,
+    ) -> Result<(), LoxError> {
+        let value = self.evaluate(&stmt.expression)?;
+        println!("{}", value);
+        Ok(())
+    }
+}
+
 impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter
     }
 
-    pub fn interpret(&self, expr: &Rc<Expr>) -> Result<String, LoxError> {
-        match self.evaluate(expr) {
-            Ok(v) => Ok(v.to_string()),
-            Err(err) => Err(err),
+    pub fn interpret(&self, statements: &Vec<Stmt>) -> Result<(), LoxError> {
+        for statement in statements {
+            self.execute(statement)?;
         }
+
+        Ok(())
     }
 
     fn evaluate(&self, expr: &Rc<Expr>) -> Result<Literal, LoxError> {
         expr.accept(self)
+    }
+
+    fn execute(&self, stmt: &Stmt) -> Result<(), LoxError> {
+        stmt.accept(self)
     }
 
     fn is_truthy(&self, literal: &Literal) -> bool {

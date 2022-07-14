@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use crate::error_reporter::LoxError;
 use crate::expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr};
+use crate::stmt::{ExpressionStmt, PrintStmt, Stmt};
 use crate::token::Token;
 use crate::token_type::{Literal, TokenType};
 
@@ -27,12 +28,44 @@ impl Parser<'_> {
         Parser { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Expr, LoxError> {
-        self.expression()
+    pub fn parse(&mut self) -> Result<Vec<Stmt>, LoxError> {
+        let mut statements: Vec<Stmt> = vec![];
+        while !self.is_at_end() {
+            if let Ok(s) = self.statement() {
+                statements.push(s);
+            }
+        }
+        Ok(statements)
     }
 
     fn expression(&mut self) -> Result<Expr, LoxError> {
         self.equality()
+    }
+
+    fn statement(&mut self) -> Result<Stmt, LoxError> {
+        if self.is_match(vec![TokenType::Print]) {
+            return self.print_statement();
+        }
+
+        self.expression_statement()
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt, LoxError> {
+        let value = self.expression()?;
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after value.".to_string(),
+        )?;
+        Ok(Stmt::Print(PrintStmt::new(Rc::new(value))))
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt, LoxError> {
+        let expr = self.expression()?;
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after value.".to_string(),
+        )?;
+        Ok(Stmt::Expression(ExpressionStmt::new(Rc::new(expr))))
     }
 
     fn equality(&mut self) -> Result<Expr, LoxError> {

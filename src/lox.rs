@@ -2,9 +2,7 @@ use std::fs::File;
 use std::io::{self, BufReader, Read};
 use std::path::Path;
 use std::process;
-use std::rc::Rc;
 
-use crate::ast_printer::AstPrinter;
 use crate::interpreter::Interpreter;
 use crate::parser::Parser;
 use crate::scanner::Scanner;
@@ -27,13 +25,9 @@ impl Lox {
         let tokens = scanner.scan_tokens();
 
         let mut parser = Parser::new(tokens);
-        let ast_printer = AstPrinter::new();
 
-        let expr = match parser.parse() {
-            Ok(e) => {
-                println!("{}", ast_printer.print(&e));
-                e
-            }
+        let statements = match parser.parse() {
+            Ok(s) => s,
             Err(_) => {
                 self.had_error = true;
                 return;
@@ -41,12 +35,10 @@ impl Lox {
         };
 
         let interpreter = Interpreter::new();
-        match interpreter.interpret(&Rc::new(expr)) {
-            Ok(v) => println!("{v}"),
-            Err(_) => {
-                self.had_runtime_error = true;
-                return;
-            }
+
+        if let Err(_) = interpreter.interpret(&statements) {
+            self.had_runtime_error = true;
+            return;
         }
     }
 
