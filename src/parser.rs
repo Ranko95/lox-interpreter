@@ -4,9 +4,10 @@ use crate::error_reporter::LoxError;
 use crate::expr::{
     BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr,
 };
+use crate::literal::Literal;
 use crate::stmt::{ExpressionStmt, PrintStmt, Stmt, VarStmt};
 use crate::token::Token;
-use crate::token_type::{Literal, TokenType};
+use crate::token_type::TokenType;
 
 /* expression grammar
 expression     → equality ;

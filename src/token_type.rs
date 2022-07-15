@@ -52,14 +52,6 @@ pub enum TokenType {
     EOF,
 }
 
-#[derive(Clone)]
-pub enum Literal {
-    Number(f64),
-    String(String),
-    Bool(bool),
-    Nil,
-}
-
 impl Debug for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -109,22 +101,5 @@ impl Debug for TokenType {
 impl Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
-    }
-}
-
-impl Display for Literal {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Literal::Number(v) => write!(f, "{v}"),
-            Literal::String(v) => write!(f, "{v}"),
-            Literal::Bool(v) => {
-                if *v {
-                    write!(f, "true")
-                } else {
-                    write!(f, "false")
-                }
-            }
-            Literal::Nil => write!(f, "nil"),
-        }
     }
 }

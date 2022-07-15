@@ -1,6 +1,7 @@
 use std::fmt::{self, Display};
 
-use crate::token_type::{Literal, TokenType};
+use crate::literal::Literal;
+use crate::token_type::TokenType;
 
 pub struct Token {
     pub token_type: TokenType,

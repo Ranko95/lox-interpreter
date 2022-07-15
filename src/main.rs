@@ -7,6 +7,7 @@ mod environment;
 mod error_reporter;
 mod expr;
 mod interpreter;
+mod literal;
 mod lox;
 mod parser;
 mod scanner;

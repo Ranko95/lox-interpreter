@@ -6,9 +6,10 @@ use crate::expr::{
     BinaryExpr, Expr, ExprVisitor, GroupingExpr, LiteralExpr, UnaryExpr,
     VariableExpr,
 };
+use crate::literal::Literal;
 use crate::stmt::{ExpressionStmt, PrintStmt, Stmt, StmtVisitor, VarStmt};
 use crate::token::Token;
-use crate::token_type::{Literal, TokenType};
+use crate::token_type::TokenType;
 
 pub struct Interpreter {
     environment: Environment,

@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use crate::error_reporter::LoxError;
+use crate::literal::Literal;
 use crate::token::Token;
-use crate::token_type::{Literal, TokenType};
+use crate::token_type::TokenType;
 
 const RADIX: u32 = 10;
 

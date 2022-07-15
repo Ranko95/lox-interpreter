@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::error_reporter::LoxError;
+use crate::literal::Literal;
 use crate::token::Token;
-use crate::token_type::Literal;
 
 pub struct Environment {
     values: HashMap<String, Literal>,
