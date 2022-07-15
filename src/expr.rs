@@ -7,6 +7,7 @@ pub enum Expr {
     Grouping(GroupingExpr),
     Literal(LiteralExpr),
     Unary(UnaryExpr),
+    Variable(VariableExpr),
 }
 
 impl Expr {
@@ -16,6 +17,7 @@ impl Expr {
             Expr::Grouping(ge) => ge.accept(expr_visitor),
             Expr::Literal(le) => le.accept(expr_visitor),
             Expr::Unary(ue) => ue.accept(expr_visitor),
+            Expr::Variable(ve) => ve.accept(expr_visitor),
         }
     }
 }
@@ -83,9 +85,24 @@ impl UnaryExpr {
     }
 }
 
+pub struct VariableExpr {
+    pub name: Token,
+}
+
+impl VariableExpr {
+    pub fn new(name: Token) -> VariableExpr {
+        VariableExpr { name }
+    }
+
+    pub fn accept<T>(&self, visitor: &dyn ExprVisitor<T>) -> T {
+        visitor.visit_variable_expr(self)
+    }
+}
+
 pub trait ExprVisitor<T> {
     fn visit_binary_expr(&self, expr: &BinaryExpr) -> T;
     fn visit_grouping_expr(&self, expr: &GroupingExpr) -> T;
     fn visit_literal_expr(&self, expr: &LiteralExpr) -> T;
     fn visit_unary_expr(&self, expr: &UnaryExpr) -> T;
+    fn visit_variable_expr(&self, expr: &VariableExpr) -> T;
 }

@@ -34,7 +34,7 @@ impl Lox {
             }
         };
 
-        let interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new();
 
         if let Err(_) = interpreter.interpret(&statements) {
             self.had_runtime_error = true;

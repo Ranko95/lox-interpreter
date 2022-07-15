@@ -1,8 +1,10 @@
 use std::rc::Rc;
 
 use crate::error_reporter::LoxError;
-use crate::expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr};
-use crate::stmt::{ExpressionStmt, PrintStmt, Stmt};
+use crate::expr::{
+    BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr,
+};
+use crate::stmt::{ExpressionStmt, PrintStmt, Stmt, VarStmt};
 use crate::token::Token;
 use crate::token_type::{Literal, TokenType};
 
@@ -31,7 +33,7 @@ impl Parser<'_> {
     pub fn parse(&mut self) -> Result<Vec<Stmt>, LoxError> {
         let mut statements: Vec<Stmt> = vec![];
         while !self.is_at_end() {
-            if let Ok(s) = self.statement() {
+            if let Ok(s) = self.declaration() {
                 statements.push(s);
             }
         }
@@ -40,6 +42,20 @@ impl Parser<'_> {
 
     fn expression(&mut self) -> Result<Expr, LoxError> {
         self.equality()
+    }
+
+    fn declaration(&mut self) -> Result<Stmt, LoxError> {
+        let result = if self.is_match(vec![TokenType::Var]) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        };
+
+        if result.is_err() {
+            self.synchronize();
+        }
+
+        result
     }
 
     fn statement(&mut self) -> Result<Stmt, LoxError> {
@@ -57,6 +73,26 @@ impl Parser<'_> {
             "Expect ';' after value.".to_string(),
         )?;
         Ok(Stmt::Print(PrintStmt::new(Rc::new(value))))
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt, LoxError> {
+        let name = self.consume(
+            TokenType::Identifier,
+            "Expect variable name.".to_string(),
+        )?;
+
+        let initializer = if self.is_match(vec![TokenType::Equal]) {
+            Some(Rc::new(self.expression()?))
+        } else {
+            None
+        };
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after variable declaration.".to_string(),
+        )?;
+
+        Ok(Stmt::Var(VarStmt::new(name, initializer)))
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, LoxError> {
@@ -201,6 +237,9 @@ impl Parser<'_> {
             let expr = self.expression()?;
 
             Ok(Expr::Grouping(GroupingExpr::new(Rc::new(expr))))
+        } else if self.is_match(vec![TokenType::Identifier]) {
+            let name = self.previous().clone();
+            Ok(Expr::Variable(VariableExpr::new(name)))
         } else {
             let current_token = self.peek().clone();
             Err(self.error(current_token, "Expression expected".to_string()))

@@ -3,6 +3,7 @@ use std::path::Path;
 use std::process;
 
 mod ast_printer;
+mod environment;
 mod error_reporter;
 mod expr;
 mod interpreter;
