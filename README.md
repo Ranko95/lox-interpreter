@@ -11,8 +11,8 @@ An overview of the lox language can be found [here](http://www.craftinginterpret
 - [X] Prefix and infix expressions
 - [X] Runtime representation of objects
 - [X] Interpreting code using the Visitor pattern
-- [ ] Lexical scope
-- [ ] Environment chains for storing variables
+- [X] Lexical scope
+- [X] Environment chains for storing variables
 - [ ] Control flow
 - [ ] Functions with parameters
 - [ ] Closures

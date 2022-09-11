@@ -1,23 +1,26 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::environment::Environment;
 use crate::error_reporter::LoxError;
 use crate::expr::{
-    BinaryExpr, Expr, ExprVisitor, GroupingExpr, LiteralExpr, UnaryExpr,
-    VariableExpr,
+    AssignExpr, BinaryExpr, Expr, ExprVisitor, GroupingExpr, LiteralExpr,
+    UnaryExpr, VariableExpr,
 };
 use crate::literal::Literal;
-use crate::stmt::{ExpressionStmt, PrintStmt, Stmt, StmtVisitor, VarStmt};
+use crate::stmt::{
+    BlockStmt, ExpressionStmt, PrintStmt, Stmt, StmtVisitor, VarStmt,
+};
 use crate::token::Token;
 use crate::token_type::TokenType;
 
 pub struct Interpreter {
-    environment: Environment,
+    environment: Rc<RefCell<Environment>>,
 }
 
 impl ExprVisitor<Result<Literal, LoxError>> for Interpreter {
     fn visit_binary_expr(
-        &self,
+        &mut self,
         expr: &BinaryExpr,
     ) -> Result<Literal, LoxError> {
         let left = self.evaluate(&expr.left)?;
@@ -121,7 +124,7 @@ impl ExprVisitor<Result<Literal, LoxError>> for Interpreter {
     }
 
     fn visit_grouping_expr(
-        &self,
+        &mut self,
         expr: &GroupingExpr,
     ) -> Result<Literal, LoxError> {
         self.evaluate(&expr.expression)
@@ -134,7 +137,10 @@ impl ExprVisitor<Result<Literal, LoxError>> for Interpreter {
         Ok(expr.value.clone().unwrap())
     }
 
-    fn visit_unary_expr(&self, expr: &UnaryExpr) -> Result<Literal, LoxError> {
+    fn visit_unary_expr(
+        &mut self,
+        expr: &UnaryExpr,
+    ) -> Result<Literal, LoxError> {
         let right = self.evaluate(&expr.right)?;
 
         match expr.operator.token_type {
@@ -154,20 +160,31 @@ impl ExprVisitor<Result<Literal, LoxError>> for Interpreter {
         &self,
         expr: &VariableExpr,
     ) -> Result<Literal, LoxError> {
-        self.environment.get(expr.name.clone())
+        self.environment.borrow().get(expr.name.clone())
+    }
+
+    fn visit_assignment_expr(
+        &mut self,
+        expr: &AssignExpr,
+    ) -> Result<Literal, LoxError> {
+        let value = self.evaluate(&expr.value)?;
+        self.environment
+            .borrow_mut()
+            .assign(expr.name.clone(), value.clone())?;
+        Ok(value)
     }
 }
 
 impl StmtVisitor<Result<(), LoxError>> for Interpreter {
     fn visit_expression_stmt(
-        &self,
+        &mut self,
         stmt: &ExpressionStmt,
     ) -> Result<(), LoxError> {
         self.evaluate(&stmt.expression)?;
         Ok(())
     }
 
-    fn visit_print_stmt(&self, stmt: &PrintStmt) -> Result<(), LoxError> {
+    fn visit_print_stmt(&mut self, stmt: &PrintStmt) -> Result<(), LoxError> {
         let value = self.evaluate(&stmt.expression)?;
         println!("{}", value);
         Ok(())
@@ -180,15 +197,24 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
             Literal::Nil
         };
 
-        self.environment.define(stmt.name.lexeme.clone(), value);
+        self.environment
+            .borrow_mut()
+            .define(stmt.name.lexeme.clone(), value);
         Ok(())
+    }
+
+    fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> Result<(), LoxError> {
+        self.execute_block(
+            &stmt.statements,
+            Environment::new_with_enclosing(self.environment.clone()),
+        )
     }
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {
-            environment: Environment::new(),
+            environment: Rc::new(RefCell::new(Environment::new())),
         }
     }
 
@@ -203,12 +229,29 @@ impl Interpreter {
         Ok(())
     }
 
-    fn evaluate(&self, expr: &Rc<Expr>) -> Result<Literal, LoxError> {
+    fn evaluate(&mut self, expr: &Rc<Expr>) -> Result<Literal, LoxError> {
         expr.accept(self)
     }
 
     fn execute(&mut self, stmt: &Stmt) -> Result<(), LoxError> {
         stmt.accept(self)
+    }
+
+    fn execute_block(
+        &mut self,
+        statements: &Vec<Stmt>,
+        environment: Environment,
+    ) -> Result<(), LoxError> {
+        let previous = self.environment.clone();
+        self.environment = Rc::new(RefCell::new(environment));
+
+        let result = statements
+            .iter()
+            .try_for_each(|statement| self.execute(statement.clone()));
+
+        self.environment = previous;
+
+        result
     }
 
     fn is_truthy(&self, literal: &Literal) -> bool {

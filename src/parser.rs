@@ -2,15 +2,18 @@ use std::rc::Rc;
 
 use crate::error_reporter::LoxError;
 use crate::expr::{
-    BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr,
+    AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr,
+    VariableExpr,
 };
 use crate::literal::Literal;
-use crate::stmt::{ExpressionStmt, PrintStmt, Stmt, VarStmt};
+use crate::stmt::{BlockStmt, ExpressionStmt, PrintStmt, Stmt, VarStmt};
 use crate::token::Token;
 use crate::token_type::TokenType;
 
 /* expression grammar
-expression     → equality ;
+expression     → assignment ;
+assignment     → IDENTIFIER "=" assignment
+               | equality ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
@@ -42,7 +45,7 @@ impl Parser<'_> {
     }
 
     fn expression(&mut self) -> Result<Expr, LoxError> {
-        self.equality()
+        self.assignment()
     }
 
     fn declaration(&mut self) -> Result<Stmt, LoxError> {
@@ -62,6 +65,9 @@ impl Parser<'_> {
     fn statement(&mut self) -> Result<Stmt, LoxError> {
         if self.is_match(vec![TokenType::Print]) {
             return self.print_statement();
+        }
+        if self.is_match(vec![TokenType::LeftBrace]) {
+            return Ok(Stmt::Block(BlockStmt::new(self.block()?)));
         }
 
         self.expression_statement()
@@ -103,6 +109,47 @@ impl Parser<'_> {
             "Expect ';' after value.".to_string(),
         )?;
         Ok(Stmt::Expression(ExpressionStmt::new(Rc::new(expr))))
+    }
+
+    fn block(&mut self) -> Result<Vec<Stmt>, LoxError> {
+        let mut statements: Vec<Stmt> = Vec::new();
+
+        while !self.check(TokenType::RightBrace) && !self.is_at_end() {
+            statements.push(self.declaration()?);
+        }
+
+        self.consume(
+            TokenType::RightBrace,
+            "Expect '}' after block.".to_string(),
+        )?;
+        Ok(statements)
+    }
+
+    fn assignment(&mut self) -> Result<Expr, LoxError> {
+        let expr = self.equality()?;
+
+        if self.is_match(vec![TokenType::Equal]) {
+            let equals = self.previous().clone();
+            let value = self.assignment()?;
+
+            match expr {
+                Expr::Variable(ve) => {
+                    let name = ve.name;
+                    return Ok(Expr::Assign(AssignExpr::new(
+                        name,
+                        Rc::new(value),
+                    )));
+                }
+                _ => {
+                    self.error(
+                        equals,
+                        "Invalid assignment target.".to_string(),
+                    );
+                }
+            }
+        }
+
+        Ok(expr)
     }
 
     fn equality(&mut self) -> Result<Expr, LoxError> {

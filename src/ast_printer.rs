@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use crate::expr::{
-    BinaryExpr, Expr, ExprVisitor, GroupingExpr, LiteralExpr, UnaryExpr,
-    VariableExpr,
+    AssignExpr, BinaryExpr, Expr, ExprVisitor, GroupingExpr, LiteralExpr,
+    UnaryExpr, VariableExpr,
 };
 
 pub struct AstPrinter;
@@ -12,11 +12,11 @@ impl AstPrinter {
         AstPrinter
     }
 
-    pub fn print(&self, expr: &Expr) -> String {
+    pub fn print(&mut self, expr: &Expr) -> String {
         expr.accept(self)
     }
 
-    fn parenthesize(&self, name: &str, exprs: &Vec<&Rc<Expr>>) -> String {
+    fn parenthesize(&mut self, name: &str, exprs: &Vec<&Rc<Expr>>) -> String {
         let mut result_string = format!("({name}");
         for expr in exprs {
             result_string = format!("{result_string} {}", expr.accept(self));
@@ -28,14 +28,14 @@ impl AstPrinter {
 }
 
 impl ExprVisitor<String> for AstPrinter {
-    fn visit_binary_expr(&self, expr: &BinaryExpr) -> String {
+    fn visit_binary_expr(&mut self, expr: &BinaryExpr) -> String {
         self.parenthesize(
             &expr.operator.lexeme.to_owned(),
             &vec![&expr.left, &expr.right],
         )
     }
 
-    fn visit_grouping_expr(&self, expr: &GroupingExpr) -> String {
+    fn visit_grouping_expr(&mut self, expr: &GroupingExpr) -> String {
         self.parenthesize("group", &vec![&expr.expression])
     }
 
@@ -46,11 +46,15 @@ impl ExprVisitor<String> for AstPrinter {
         }
     }
 
-    fn visit_unary_expr(&self, expr: &UnaryExpr) -> String {
+    fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> String {
         self.parenthesize(&expr.operator.lexeme.to_owned(), &vec![&expr.right])
     }
 
     fn visit_variable_expr(&self, expr: &VariableExpr) -> String {
+        todo!()
+    }
+
+    fn visit_assignment_expr(&mut self, expr: &AssignExpr) -> String {
         todo!()
     }
 }

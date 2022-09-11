@@ -3,6 +3,7 @@ use std::rc::Rc;
 use crate::{expr::Expr, token::Token};
 
 pub enum Stmt {
+    Block(BlockStmt),
     Expression(ExpressionStmt),
     Print(PrintStmt),
     Var(VarStmt),
@@ -11,10 +12,25 @@ pub enum Stmt {
 impl Stmt {
     pub fn accept<T>(&self, stmt_visitor: &mut dyn StmtVisitor<T>) -> T {
         match self {
+            Stmt::Block(bs) => bs.accept(stmt_visitor),
             Stmt::Expression(es) => es.accept(stmt_visitor),
             Stmt::Print(ps) => ps.accept(stmt_visitor),
             Stmt::Var(vs) => vs.accept(stmt_visitor),
         }
+    }
+}
+
+pub struct BlockStmt {
+    pub statements: Vec<Stmt>,
+}
+
+impl BlockStmt {
+    pub fn new(statements: Vec<Stmt>) -> BlockStmt {
+        BlockStmt { statements }
+    }
+
+    pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> T {
+        visitor.visit_block_stmt(self)
     }
 }
 
@@ -27,7 +43,7 @@ impl ExpressionStmt {
         ExpressionStmt { expression: expr }
     }
 
-    pub fn accept<T>(&self, visitor: &dyn StmtVisitor<T>) -> T {
+    pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> T {
         visitor.visit_expression_stmt(self)
     }
 }
@@ -41,7 +57,7 @@ impl PrintStmt {
         PrintStmt { expression: expr }
     }
 
-    pub fn accept<T>(&self, visitor: &dyn StmtVisitor<T>) -> T {
+    pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> T {
         visitor.visit_print_stmt(self)
     }
 }
@@ -62,7 +78,8 @@ impl VarStmt {
 }
 
 pub trait StmtVisitor<T> {
-    fn visit_expression_stmt(&self, stmt: &ExpressionStmt) -> T;
-    fn visit_print_stmt(&self, stmt: &PrintStmt) -> T;
+    fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> T;
+    fn visit_print_stmt(&mut self, stmt: &PrintStmt) -> T;
     fn visit_var_stmt(&mut self, stmt: &VarStmt) -> T;
+    fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> T;
 }
