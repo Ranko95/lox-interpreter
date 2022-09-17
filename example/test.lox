@@ -1,19 +1,11 @@
-var a = "global a";
-var b = "global b";
-var c = "global c";
-{
-  var a = "outer a";
-  var b = "outer b";
-  {
-    var a = "inner a";
-    print a;
-    print b;
-    print c;
-  }
-  print a;
-  print b;
-  print c;
+var target = 10;
+var a = 4;
+var b = 5;
+
+var sum = a + b;
+
+if (sum < target) {
+  print sum + " is less then " + target;
+} else {
+  print sum + " is more or equal " + target;
 }
-print a;
-print b;
-print c;

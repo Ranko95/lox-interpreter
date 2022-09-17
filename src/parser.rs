@@ -6,7 +6,9 @@ use crate::expr::{
     VariableExpr,
 };
 use crate::literal::Literal;
-use crate::stmt::{BlockStmt, ExpressionStmt, PrintStmt, Stmt, VarStmt};
+use crate::stmt::{
+    BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VarStmt,
+};
 use crate::token::Token;
 use crate::token_type::TokenType;
 
@@ -63,6 +65,9 @@ impl Parser<'_> {
     }
 
     fn statement(&mut self) -> Result<Stmt, LoxError> {
+        if self.is_match(vec![TokenType::If]) {
+            return self.if_statement();
+        }
         if self.is_match(vec![TokenType::Print]) {
             return self.print_statement();
         }
@@ -71,6 +76,33 @@ impl Parser<'_> {
         }
 
         self.expression_statement()
+    }
+
+    fn if_statement(&mut self) -> Result<Stmt, LoxError> {
+        self.consume(
+            TokenType::LeftParen,
+            "Expect '(' after 'if'.".to_string(),
+        )?;
+        let condition = self.expression()?;
+        self.consume(
+            TokenType::RightParen,
+            "Expect ')' after if condition.".to_string(),
+        )?;
+
+        let then_branch = self.statement()?;
+
+        let else_branch = if self.is_match(vec![TokenType::Else]) {
+            let stmt = self.statement()?;
+            Some(Rc::new(stmt))
+        } else {
+            None
+        };
+
+        Ok(Stmt::If(IfStmt::new(
+            Rc::new(condition),
+            Rc::new(then_branch),
+            else_branch,
+        )))
     }
 
     fn print_statement(&mut self) -> Result<Stmt, LoxError> {

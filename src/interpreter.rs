@@ -9,7 +9,7 @@ use crate::expr::{
 };
 use crate::literal::Literal;
 use crate::stmt::{
-    BlockStmt, ExpressionStmt, PrintStmt, Stmt, StmtVisitor, VarStmt,
+    BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, StmtVisitor, VarStmt,
 };
 use crate::token::Token;
 use crate::token_type::TokenType;
@@ -192,6 +192,21 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
         stmt: &ExpressionStmt,
     ) -> Result<(), LoxError> {
         self.evaluate(&stmt.expression)?;
+        Ok(())
+    }
+
+    fn visit_if_stmt(&mut self, stmt: &IfStmt) -> Result<(), LoxError> {
+        let literal = self.evaluate(&stmt.condition)?;
+        if self.is_truthy(&literal) {
+            self.execute(&stmt.then_branch)?;
+        } else if stmt.else_branch.is_some() {
+            match &stmt.else_branch {
+                Some(branch) => {
+                    self.execute(branch)?;
+                }
+                None => unreachable!(),
+            }
+        }
         Ok(())
     }
 
