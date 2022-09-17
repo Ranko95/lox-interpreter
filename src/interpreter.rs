@@ -120,6 +120,7 @@ impl ExprVisitor<Result<Literal, LoxError>> for Interpreter {
                     "Operands must be two numbers or two strings.".to_string(),
                 )),
             },
+            _ => unreachable!(),
         }
     }
 
@@ -160,7 +161,17 @@ impl ExprVisitor<Result<Literal, LoxError>> for Interpreter {
         &self,
         expr: &VariableExpr,
     ) -> Result<Literal, LoxError> {
-        self.environment.borrow().get(expr.name.clone())
+        let value = self.environment.borrow().get(expr.name.clone())?;
+        match value {
+            Literal::NilImplicit => {
+                let error = self.error(
+                    &expr.name,
+                    "Variable was not explicitly initialized".to_string(),
+                );
+                Err(error)
+            }
+            _ => Ok(value),
+        }
     }
 
     fn visit_assignment_expr(
@@ -194,7 +205,7 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
         let value = if let Some(initializer) = &stmt.initializer {
             self.evaluate(&initializer)?
         } else {
-            Literal::Nil
+            Literal::NilImplicit
         };
 
         self.environment
