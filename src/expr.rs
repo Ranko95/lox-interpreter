@@ -8,6 +8,7 @@ pub enum Expr {
     Binary(BinaryExpr),
     Grouping(GroupingExpr),
     Literal(LiteralExpr),
+    Logical(LogicalExpr),
     Unary(UnaryExpr),
     Variable(VariableExpr),
 }
@@ -19,6 +20,7 @@ impl Expr {
             Expr::Binary(be) => be.accept(expr_visitor),
             Expr::Grouping(ge) => ge.accept(expr_visitor),
             Expr::Literal(le) => le.accept(expr_visitor),
+            Expr::Logical(le) => le.accept(expr_visitor),
             Expr::Unary(ue) => ue.accept(expr_visitor),
             Expr::Variable(ve) => ve.accept(expr_visitor),
         }
@@ -88,6 +90,30 @@ impl LiteralExpr {
     }
 }
 
+pub struct LogicalExpr {
+    pub left: Rc<Expr>,
+    pub operator: Token,
+    pub right: Rc<Expr>,
+}
+
+impl LogicalExpr {
+    pub fn new(
+        left: Rc<Expr>,
+        operator: Token,
+        right: Rc<Expr>,
+    ) -> LogicalExpr {
+        LogicalExpr {
+            left,
+            operator,
+            right,
+        }
+    }
+
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
+        visitor.visit_logical_exp(self)
+    }
+}
+
 pub struct UnaryExpr {
     pub operator: Token,
     pub right: Rc<Expr>,
@@ -121,6 +147,7 @@ pub trait ExprVisitor<T> {
     fn visit_binary_expr(&mut self, expr: &BinaryExpr) -> T;
     fn visit_grouping_expr(&mut self, expr: &GroupingExpr) -> T;
     fn visit_literal_expr(&self, expr: &LiteralExpr) -> T;
+    fn visit_logical_exp(&mut self, expr: &LogicalExpr) -> T;
     fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> T;
     fn visit_variable_expr(&self, expr: &VariableExpr) -> T;
     fn visit_assignment_expr(&mut self, expr: &AssignExpr) -> T;

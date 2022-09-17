@@ -2,8 +2,8 @@ use std::rc::Rc;
 
 use crate::error_reporter::LoxError;
 use crate::expr::{
-    AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr,
-    VariableExpr,
+    AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, LogicalExpr,
+    UnaryExpr, VariableExpr,
 };
 use crate::literal::Literal;
 use crate::stmt::{
@@ -15,7 +15,9 @@ use crate::token_type::TokenType;
 /* expression grammar
 expression     → assignment ;
 assignment     → IDENTIFIER "=" assignment
-               | equality ;
+               | logic_or ;
+logic_or       → logic_and ( "or" logic_and )* ;
+logic_and      → equality ( "and" equality )* ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
@@ -158,7 +160,7 @@ impl Parser<'_> {
     }
 
     fn assignment(&mut self) -> Result<Expr, LoxError> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
 
         if self.is_match(vec![TokenType::Equal]) {
             let equals = self.previous().clone();
@@ -179,6 +181,38 @@ impl Parser<'_> {
                     );
                 }
             }
+        }
+
+        Ok(expr)
+    }
+
+    fn or(&mut self) -> Result<Expr, LoxError> {
+        let mut expr = self.and()?;
+
+        while self.is_match(vec![TokenType::Or]) {
+            let operator = self.previous().clone();
+            let right = self.and()?;
+            expr = Expr::Logical(LogicalExpr::new(
+                Rc::new(expr),
+                operator,
+                Rc::new(right),
+            ));
+        }
+
+        Ok(expr)
+    }
+
+    fn and(&mut self) -> Result<Expr, LoxError> {
+        let mut expr = self.equality()?;
+
+        while self.is_match(vec![TokenType::And]) {
+            let operator = self.previous().clone();
+            let right = self.equality()?;
+            expr = Expr::Logical(LogicalExpr::new(
+                Rc::new(expr),
+                operator,
+                Rc::new(right),
+            ))
         }
 
         Ok(expr)

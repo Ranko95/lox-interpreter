@@ -1,11 +1,2 @@
-var target = 10;
-var a = 4;
-var b = 5;
-
-var sum = a + b;
-
-if (sum < target) {
-  print sum + " is less then " + target;
-} else {
-  print sum + " is more or equal " + target;
-}
+print "hi" or 2; // "hi".
+print nil or "yes"; // "yes".

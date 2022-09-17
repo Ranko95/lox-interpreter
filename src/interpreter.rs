@@ -5,7 +5,7 @@ use crate::environment::Environment;
 use crate::error_reporter::LoxError;
 use crate::expr::{
     AssignExpr, BinaryExpr, Expr, ExprVisitor, GroupingExpr, LiteralExpr,
-    UnaryExpr, VariableExpr,
+    LogicalExpr, UnaryExpr, VariableExpr,
 };
 use crate::literal::Literal;
 use crate::stmt::{
@@ -136,6 +136,25 @@ impl ExprVisitor<Result<Literal, LoxError>> for Interpreter {
         expr: &LiteralExpr,
     ) -> Result<Literal, LoxError> {
         Ok(expr.value.clone().unwrap())
+    }
+
+    fn visit_logical_exp(
+        &mut self,
+        expr: &LogicalExpr,
+    ) -> Result<Literal, LoxError> {
+        let left = self.evaluate(&expr.left)?;
+
+        if expr.operator.token_type == TokenType::Or {
+            if self.is_truthy(&left) {
+                return Ok(left);
+            }
+        } else {
+            if !self.is_truthy(&left) {
+                return Ok(left);
+            }
+        }
+
+        Ok(self.evaluate(&expr.right)?)
     }
 
     fn visit_unary_expr(
