@@ -13,7 +13,7 @@ An overview of the lox language can be found [here](http://www.craftinginterpret
 - [X] Interpreting code using the Visitor pattern
 - [X] Lexical scope
 - [X] Environment chains for storing variables
-- [ ] Control flow
+- [X] Control flow
 - [ ] Functions with parameters
 - [ ] Closures
 - [ ] Static variable resolution and error detection
