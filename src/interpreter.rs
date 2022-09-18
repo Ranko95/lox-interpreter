@@ -10,6 +10,7 @@ use crate::expr::{
 use crate::literal::Literal;
 use crate::stmt::{
     BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, StmtVisitor, VarStmt,
+    WhileStmt,
 };
 use crate::token::Token;
 use crate::token_type::TokenType;
@@ -217,16 +218,12 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
     fn visit_if_stmt(&mut self, stmt: &IfStmt) -> Result<(), LoxError> {
         let literal = self.evaluate(&stmt.condition)?;
         if self.is_truthy(&literal) {
-            self.execute(&stmt.then_branch)?;
-        } else if stmt.else_branch.is_some() {
-            match &stmt.else_branch {
-                Some(branch) => {
-                    self.execute(branch)?;
-                }
-                None => unreachable!(),
-            }
+            self.execute(&stmt.then_branch)
+        } else if let Some(else_branch) = stmt.else_branch.clone() {
+            self.execute(&else_branch)
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 
     fn visit_print_stmt(&mut self, stmt: &PrintStmt) -> Result<(), LoxError> {
@@ -245,6 +242,15 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
         self.environment
             .borrow_mut()
             .define(stmt.name.lexeme.clone(), value);
+        Ok(())
+    }
+
+    fn visit_while_stmt(&mut self, stmt: &WhileStmt) -> Result<(), LoxError> {
+        let mut literal = self.evaluate(&stmt.condition)?;
+        while self.is_truthy(&literal) {
+            self.execute(&stmt.body)?;
+            literal = self.evaluate(&stmt.condition)?;
+        }
         Ok(())
     }
 

@@ -7,7 +7,7 @@ use crate::expr::{
 };
 use crate::literal::Literal;
 use crate::stmt::{
-    BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VarStmt,
+    BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VarStmt, WhileStmt,
 };
 use crate::token::Token;
 use crate::token_type::TokenType;
@@ -73,6 +73,9 @@ impl Parser<'_> {
         if self.is_match(vec![TokenType::Print]) {
             return self.print_statement();
         }
+        if self.is_match(vec![TokenType::While]) {
+            return self.while_statement();
+        }
         if self.is_match(vec![TokenType::LeftBrace]) {
             return Ok(Stmt::Block(BlockStmt::new(self.block()?)));
         }
@@ -134,6 +137,24 @@ impl Parser<'_> {
         )?;
 
         Ok(Stmt::Var(VarStmt::new(name, initializer)))
+    }
+
+    fn while_statement(&mut self) -> Result<Stmt, LoxError> {
+        self.consume(
+            TokenType::LeftParen,
+            "Expect '(' after 'while'.".to_string(),
+        )?;
+        let condition = self.expression()?;
+        self.consume(
+            TokenType::RightParen,
+            "Expect ')' after condition.".to_string(),
+        )?;
+        let body = self.statement()?;
+
+        Ok(Stmt::While(WhileStmt::new(
+            Rc::new(condition),
+            Rc::new(body),
+        )))
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, LoxError> {

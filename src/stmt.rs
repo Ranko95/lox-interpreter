@@ -8,6 +8,7 @@ pub enum Stmt {
     If(IfStmt),
     Print(PrintStmt),
     Var(VarStmt),
+    While(WhileStmt),
 }
 
 impl Stmt {
@@ -18,6 +19,7 @@ impl Stmt {
             Stmt::Print(ps) => ps.accept(stmt_visitor),
             Stmt::Var(vs) => vs.accept(stmt_visitor),
             Stmt::If(ifs) => ifs.accept(stmt_visitor),
+            Stmt::While(ws) => ws.accept(stmt_visitor),
         }
     }
 }
@@ -103,10 +105,26 @@ impl VarStmt {
     }
 }
 
+pub struct WhileStmt {
+    pub condition: Rc<Expr>,
+    pub body: Rc<Stmt>,
+}
+
+impl WhileStmt {
+    pub fn new(condition: Rc<Expr>, body: Rc<Stmt>) -> WhileStmt {
+        WhileStmt { condition, body }
+    }
+
+    pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> T {
+        visitor.visit_while_stmt(self)
+    }
+}
+
 pub trait StmtVisitor<T> {
     fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> T;
     fn visit_print_stmt(&mut self, stmt: &PrintStmt) -> T;
     fn visit_var_stmt(&mut self, stmt: &VarStmt) -> T;
     fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> T;
     fn visit_if_stmt(&mut self, stmt: &IfStmt) -> T;
+    fn visit_while_stmt(&mut self, stmt: &WhileStmt) -> T;
 }
