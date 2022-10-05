@@ -2,15 +2,18 @@ use std::rc::Rc;
 
 use crate::error_reporter::LoxError;
 use crate::expr::{
-    AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, LogicalExpr,
-    UnaryExpr, VariableExpr,
+    AssignExpr, BinaryExpr, CallExpr, Expr, GroupingExpr, LiteralExpr,
+    LogicalExpr, UnaryExpr, VariableExpr,
 };
 use crate::literal::Literal;
 use crate::stmt::{
-    BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VarStmt, WhileStmt,
+    BlockStmt, ExpressionStmt, FunctionStmt, IfStmt, PrintStmt, ReturnStmt,
+    Stmt, VarStmt, WhileStmt,
 };
 use crate::token::Token;
 use crate::token_type::TokenType;
+
+const MAX_ARGUMENTS_COUNT: usize = 255;
 
 /* expression grammar
 expression     → assignment ;
@@ -23,7 +26,9 @@ comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ( "/" | "*" ) unary )* ;
 unary          → ( "!" | "-" ) unary
-               | primary ;
+               | call ;
+call           → primary ( "(" arguments? ")" )* ;
+arguments      → expression ( "," expression )* ;
 primary        → NUMBER | STRING | "true" | "false" | "nil"
                | "(" expression ")" ;
 */
@@ -55,6 +60,8 @@ impl Parser<'_> {
     fn declaration(&mut self) -> Result<Stmt, LoxError> {
         let result = if self.is_match(vec![TokenType::Var]) {
             self.var_declaration()
+        } else if self.is_match(vec![TokenType::Fun]) {
+            self.function("function")
         } else {
             self.statement()
         };
@@ -75,6 +82,9 @@ impl Parser<'_> {
         }
         if self.is_match(vec![TokenType::Print]) {
             return self.print_statement();
+        }
+        if self.is_match(vec![TokenType::Return]) {
+            return self.return_statement();
         }
         if self.is_match(vec![TokenType::While]) {
             return self.while_statement();
@@ -100,7 +110,7 @@ impl Parser<'_> {
             Some(self.expression_statement()?)
         };
 
-        let mut condition = if !self.check(TokenType::Semicolon) {
+        let condition = if !self.check(TokenType::Semicolon) {
             Some(self.expression()?)
         } else {
             None
@@ -182,6 +192,21 @@ impl Parser<'_> {
         Ok(Stmt::Print(PrintStmt::new(Rc::new(value))))
     }
 
+    fn return_statement(&mut self) -> Result<Stmt, LoxError> {
+        let keyword = self.previous().to_owned();
+        let value = match self.check(TokenType::Semicolon) {
+            true => None,
+            false => Some(Rc::new(self.expression()?)),
+        };
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after return value.".to_string(),
+        )?;
+
+        Ok(Stmt::Return(ReturnStmt::new(keyword, value)))
+    }
+
     fn var_declaration(&mut self) -> Result<Stmt, LoxError> {
         let name = self.consume(
             TokenType::Identifier,
@@ -227,6 +252,60 @@ impl Parser<'_> {
             "Expect ';' after value.".to_string(),
         )?;
         Ok(Stmt::Expression(ExpressionStmt::new(Rc::new(expr))))
+    }
+
+    fn function(&mut self, kind: &str) -> Result<Stmt, LoxError> {
+        let name =
+            self.consume(TokenType::Identifier, format!("Expect {kind} name"))?;
+
+        self.consume(
+            TokenType::LeftParen,
+            format!("Expect '(' after {kind} name."),
+        )?;
+
+        let mut parameters: Vec<Token> = Vec::new();
+
+        if !self.check(TokenType::RightParen) {
+            parameters.push(self.consume(
+                TokenType::Identifier,
+                "Expect parameter name.".to_string(),
+            )?);
+            loop {
+                if self.is_match(vec![TokenType::Comma]) {
+                    if parameters.len() >= MAX_ARGUMENTS_COUNT {
+                        self.error(
+                            self.peek().clone(),
+                            "Can't have more than 255 parameters.".to_string(),
+                        );
+                    }
+
+                    parameters.push(self.consume(
+                        TokenType::Identifier,
+                        "Expect parameter name.".to_string(),
+                    )?);
+                } else {
+                    break;
+                }
+            }
+        }
+
+        self.consume(
+            TokenType::RightParen,
+            "Expect ')' after parameters.".to_string(),
+        )?;
+
+        self.consume(
+            TokenType::LeftBrace,
+            format!("Expect '{{' before {kind} body."),
+        )?;
+
+        let body = self.block()?;
+
+        Ok(Stmt::Function(FunctionStmt::new(
+            name,
+            parameters,
+            Rc::new(body),
+        )))
     }
 
     fn block(&mut self) -> Result<Vec<Stmt>, LoxError> {
@@ -417,7 +496,52 @@ impl Parser<'_> {
             return Ok(Expr::Unary(UnaryExpr::new(operator, Rc::new(right))));
         }
 
-        self.primary()
+        self.call()
+    }
+
+    fn finish_call(&mut self, callee: Expr) -> Result<Expr, LoxError> {
+        let mut arguments: Vec<Rc<Expr>> = Vec::new();
+
+        if !self.check(TokenType::RightParen) {
+            arguments.push(Rc::new(self.expression()?));
+            loop {
+                if self.is_match(vec![TokenType::Comma]) {
+                    if arguments.len() >= MAX_ARGUMENTS_COUNT {
+                        self.error(
+                            self.peek().clone(),
+                            format!(
+                                "Can't have more than {} arguments.",
+                                MAX_ARGUMENTS_COUNT
+                            ),
+                        );
+                    }
+                    arguments.push(Rc::new(self.expression()?));
+                } else {
+                    break;
+                }
+            }
+        }
+
+        let paren = self.consume(
+            TokenType::RightParen,
+            "Expect ')' after arguments.".to_string(),
+        )?;
+
+        Ok(Expr::Call(CallExpr::new(Rc::new(callee), paren, arguments)))
+    }
+
+    fn call(&mut self) -> Result<Expr, LoxError> {
+        let mut expr = self.primary()?;
+
+        loop {
+            if self.is_match(vec![TokenType::LeftParen]) {
+                expr = self.finish_call(expr)?;
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
     }
 
     fn primary(&mut self) -> Result<Expr, LoxError> {

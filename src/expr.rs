@@ -3,9 +3,11 @@ use std::rc::Rc;
 use crate::literal::Literal;
 use crate::token::Token;
 
+#[derive(Debug)]
 pub enum Expr {
     Assign(AssignExpr),
     Binary(BinaryExpr),
+    Call(CallExpr),
     Grouping(GroupingExpr),
     Literal(LiteralExpr),
     Logical(LogicalExpr),
@@ -17,6 +19,7 @@ impl Expr {
     pub fn accept<T>(&self, expr_visitor: &mut dyn ExprVisitor<T>) -> T {
         match self {
             Expr::Assign(ae) => ae.accept(expr_visitor),
+            Expr::Call(ce) => ce.accept(expr_visitor),
             Expr::Binary(be) => be.accept(expr_visitor),
             Expr::Grouping(ge) => ge.accept(expr_visitor),
             Expr::Literal(le) => le.accept(expr_visitor),
@@ -27,15 +30,10 @@ impl Expr {
     }
 }
 
+#[derive(Debug)]
 pub struct AssignExpr {
     pub name: Token,
     pub value: Rc<Expr>,
-}
-
-pub struct BinaryExpr {
-    pub left: Rc<Expr>,
-    pub operator: Token,
-    pub right: Rc<Expr>,
 }
 
 impl AssignExpr {
@@ -46,6 +44,13 @@ impl AssignExpr {
     pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
         visitor.visit_assignment_expr(self)
     }
+}
+
+#[derive(Debug)]
+pub struct BinaryExpr {
+    pub left: Rc<Expr>,
+    pub operator: Token,
+    pub right: Rc<Expr>,
 }
 
 impl BinaryExpr {
@@ -62,6 +67,32 @@ impl BinaryExpr {
     }
 }
 
+#[derive(Debug)]
+pub struct CallExpr {
+    pub callee: Rc<Expr>,
+    pub paren: Token,
+    pub arguments: Vec<Rc<Expr>>,
+}
+
+impl CallExpr {
+    pub fn new(
+        callee: Rc<Expr>,
+        paren: Token,
+        arguments: Vec<Rc<Expr>>,
+    ) -> CallExpr {
+        CallExpr {
+            callee,
+            paren,
+            arguments,
+        }
+    }
+
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
+        visitor.visit_call_expr(self)
+    }
+}
+
+#[derive(Debug)]
 pub struct GroupingExpr {
     pub expression: Rc<Expr>,
 }
@@ -76,6 +107,7 @@ impl GroupingExpr {
     }
 }
 
+#[derive(Debug)]
 pub struct LiteralExpr {
     pub value: Option<Literal>,
 }
@@ -90,6 +122,7 @@ impl LiteralExpr {
     }
 }
 
+#[derive(Debug)]
 pub struct LogicalExpr {
     pub left: Rc<Expr>,
     pub operator: Token,
@@ -114,6 +147,7 @@ impl LogicalExpr {
     }
 }
 
+#[derive(Debug)]
 pub struct UnaryExpr {
     pub operator: Token,
     pub right: Rc<Expr>,
@@ -129,6 +163,7 @@ impl UnaryExpr {
     }
 }
 
+#[derive(Debug)]
 pub struct VariableExpr {
     pub name: Token,
 }
@@ -151,4 +186,5 @@ pub trait ExprVisitor<T> {
     fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> T;
     fn visit_variable_expr(&self, expr: &VariableExpr) -> T;
     fn visit_assignment_expr(&mut self, expr: &AssignExpr) -> T;
+    fn visit_call_expr(&mut self, expr: &CallExpr) -> T;
 }

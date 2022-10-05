@@ -2,11 +2,14 @@ use std::rc::Rc;
 
 use crate::{expr::Expr, token::Token};
 
+#[derive(Debug)]
 pub enum Stmt {
     Block(BlockStmt),
     Expression(ExpressionStmt),
+    Function(FunctionStmt),
     If(IfStmt),
     Print(PrintStmt),
+    Return(ReturnStmt),
     Var(VarStmt),
     While(WhileStmt),
 }
@@ -16,7 +19,9 @@ impl Stmt {
         match self {
             Stmt::Block(bs) => bs.accept(stmt_visitor),
             Stmt::Expression(es) => es.accept(stmt_visitor),
+            Stmt::Function(fs) => fs.accept(stmt_visitor),
             Stmt::Print(ps) => ps.accept(stmt_visitor),
+            Stmt::Return(rs) => rs.accept(stmt_visitor),
             Stmt::Var(vs) => vs.accept(stmt_visitor),
             Stmt::If(ifs) => ifs.accept(stmt_visitor),
             Stmt::While(ws) => ws.accept(stmt_visitor),
@@ -24,6 +29,7 @@ impl Stmt {
     }
 }
 
+#[derive(Debug)]
 pub struct BlockStmt {
     pub statements: Vec<Stmt>,
 }
@@ -38,6 +44,7 @@ impl BlockStmt {
     }
 }
 
+#[derive(Debug)]
 pub struct ExpressionStmt {
     pub expression: Rc<Expr>,
 }
@@ -52,6 +59,28 @@ impl ExpressionStmt {
     }
 }
 
+#[derive(Debug)]
+pub struct FunctionStmt {
+    pub name: Token,
+    pub params: Vec<Token>,
+    pub body: Rc<Vec<Stmt>>,
+}
+
+impl FunctionStmt {
+    pub fn new(
+        name: Token,
+        params: Vec<Token>,
+        body: Rc<Vec<Stmt>>,
+    ) -> FunctionStmt {
+        FunctionStmt { name, params, body }
+    }
+
+    pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> T {
+        visitor.visit_function_stmt(self)
+    }
+}
+
+#[derive(Debug)]
 pub struct IfStmt {
     pub condition: Rc<Expr>,
     pub then_branch: Rc<Stmt>,
@@ -76,6 +105,7 @@ impl IfStmt {
     }
 }
 
+#[derive(Debug)]
 pub struct PrintStmt {
     pub expression: Rc<Expr>,
 }
@@ -90,6 +120,23 @@ impl PrintStmt {
     }
 }
 
+#[derive(Debug)]
+pub struct ReturnStmt {
+    pub keyword: Token,
+    pub value: Option<Rc<Expr>>,
+}
+
+impl ReturnStmt {
+    pub fn new(keyword: Token, value: Option<Rc<Expr>>) -> ReturnStmt {
+        ReturnStmt { keyword, value }
+    }
+
+    pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> T {
+        visitor.visit_return_stmt(self)
+    }
+}
+
+#[derive(Debug)]
 pub struct VarStmt {
     pub name: Token,
     pub initializer: Option<Rc<Expr>>,
@@ -105,6 +152,7 @@ impl VarStmt {
     }
 }
 
+#[derive(Debug)]
 pub struct WhileStmt {
     pub condition: Rc<Expr>,
     pub body: Rc<Stmt>,
@@ -127,4 +175,6 @@ pub trait StmtVisitor<T> {
     fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> T;
     fn visit_if_stmt(&mut self, stmt: &IfStmt) -> T;
     fn visit_while_stmt(&mut self, stmt: &WhileStmt) -> T;
+    fn visit_function_stmt(&mut self, stmt: &FunctionStmt) -> T;
+    fn visit_return_stmt(&mut self, stmt: &ReturnStmt) -> T;
 }

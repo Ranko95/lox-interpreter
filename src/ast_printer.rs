@@ -61,4 +61,8 @@ impl ExprVisitor<String> for AstPrinter {
     fn visit_logical_exp(&mut self, expr: &crate::expr::LogicalExpr) -> String {
         todo!()
     }
+
+    fn visit_call_expr(&mut self, expr: &crate::expr::CallExpr) -> String {
+        todo!()
+    }
 }

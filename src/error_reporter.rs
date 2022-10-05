@@ -4,6 +4,7 @@ pub enum LoxError {
     ScanError { line: u32, message: String },
     ParseError { token: Token, message: String },
     RuntimeError { token: Token, message: String },
+    SystemError { message: String },
 }
 
 impl LoxError {
@@ -21,6 +22,12 @@ impl LoxError {
 
     pub fn runtime_error(token: Token, message: String) -> LoxError {
         let error = LoxError::RuntimeError { token, message };
+        error.report();
+        error
+    }
+
+    pub fn system_error(message: String) -> LoxError {
+        let error = LoxError::SystemError { message };
         error.report();
         error
     }
@@ -53,6 +60,9 @@ impl LoxError {
                 } else {
                     eprintln!("{} \n[line {}]", message, token.line);
                 }
+            }
+            LoxError::SystemError { message } => {
+                eprintln!("System Error: {message}");
             }
         }
     }

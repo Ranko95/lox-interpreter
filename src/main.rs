@@ -3,12 +3,15 @@ use std::path::Path;
 use std::process;
 
 mod ast_printer;
+mod callable;
 mod environment;
 mod error_reporter;
 mod expr;
+mod function;
 mod interpreter;
 mod literal;
 mod lox;
+mod native_functions;
 mod parser;
 mod scanner;
 mod stmt;

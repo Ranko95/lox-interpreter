@@ -1,10 +1,14 @@
 use std::fmt::{self, Display};
+use std::rc::Rc;
 
-#[derive(Clone)]
+use crate::callable::LoxCallable;
+
+#[derive(Clone, Debug)]
 pub enum Literal {
     Number(f64),
     String(String),
     Bool(bool),
+    Function(Rc<dyn LoxCallable>),
     Nil,
     NilImplicit,
 }
@@ -23,6 +27,7 @@ impl Display for Literal {
             }
             Literal::Nil => write!(f, "nil"),
             Literal::NilImplicit => write!(f, "nil_implicit"),
+            Literal::Function(v) => write!(f, "{v}"),
         }
     }
 }

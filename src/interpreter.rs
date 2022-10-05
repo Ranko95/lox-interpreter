@@ -4,18 +4,21 @@ use std::rc::Rc;
 use crate::environment::Environment;
 use crate::error_reporter::LoxError;
 use crate::expr::{
-    AssignExpr, BinaryExpr, Expr, ExprVisitor, GroupingExpr, LiteralExpr,
-    LogicalExpr, UnaryExpr, VariableExpr,
+    AssignExpr, BinaryExpr, CallExpr, Expr, ExprVisitor, GroupingExpr,
+    LiteralExpr, LogicalExpr, UnaryExpr, VariableExpr,
 };
+use crate::function::LoxFunction;
 use crate::literal::Literal;
+use crate::native_functions::Clock;
 use crate::stmt::{
-    BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, StmtVisitor, VarStmt,
-    WhileStmt,
+    BlockStmt, ExpressionStmt, FunctionStmt, IfStmt, PrintStmt, ReturnStmt,
+    Stmt, StmtVisitor, VarStmt, WhileStmt,
 };
 use crate::token::Token;
 use crate::token_type::TokenType;
 
 pub struct Interpreter {
+    globals: Rc<RefCell<Environment>>,
     environment: Rc<RefCell<Environment>>,
 }
 
@@ -125,6 +128,42 @@ impl ExprVisitor<Result<Literal, LoxError>> for Interpreter {
         }
     }
 
+    fn visit_call_expr(
+        &mut self,
+        expr: &CallExpr,
+    ) -> Result<Literal, LoxError> {
+        let callee = self.evaluate(&expr.callee)?;
+        let mut arguments: Vec<Literal> = Vec::new();
+        for argument in &expr.arguments {
+            arguments.push(self.evaluate(argument)?);
+        }
+
+        let function = match callee {
+            Literal::Function(f) => Some(f),
+            _ => None,
+        };
+
+        if let Some(function) = function {
+            if arguments.len() != function.arity() {
+                return Err(LoxError::runtime_error(
+                    expr.paren.to_owned(),
+                    format!(
+                        "Expected {} arguments but got {}.",
+                        function.arity(),
+                        arguments.len()
+                    ),
+                ));
+            }
+
+            Ok(function.call(self, arguments)?)
+        } else {
+            Err(LoxError::runtime_error(
+                expr.paren.to_owned(),
+                "Can only call functions and classes.".to_string(),
+            ))
+        }
+    }
+
     fn visit_grouping_expr(
         &mut self,
         expr: &GroupingExpr,
@@ -215,6 +254,19 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
         Ok(())
     }
 
+    fn visit_function_stmt(
+        &mut self,
+        stmt: &FunctionStmt,
+    ) -> Result<(), LoxError> {
+        let function = LoxFunction::new(stmt);
+        self.environment.borrow_mut().define(
+            stmt.name.lexeme.to_owned(),
+            Literal::Function(Rc::new(function)),
+        );
+
+        Ok(())
+    }
+
     fn visit_if_stmt(&mut self, stmt: &IfStmt) -> Result<(), LoxError> {
         let literal = self.evaluate(&stmt.condition)?;
         if self.is_truthy(&literal) {
@@ -230,6 +282,10 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
         let value = self.evaluate(&stmt.expression)?;
         println!("{}", value);
         Ok(())
+    }
+
+    fn visit_return_stmt(&mut self, stmt: &ReturnStmt) -> Result<(), LoxError> {
+        todo!()
     }
 
     fn visit_var_stmt(&mut self, stmt: &VarStmt) -> Result<(), LoxError> {
@@ -264,8 +320,16 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
 
 impl Interpreter {
     pub fn new() -> Interpreter {
+        let globals = Rc::new(RefCell::new(Environment::new()));
+        globals
+            .borrow_mut()
+            .define("clock".to_string(), Literal::Function(Rc::new(Clock)));
+
+        let environment = globals.clone();
+
         Interpreter {
-            environment: Rc::new(RefCell::new(Environment::new())),
+            globals,
+            environment,
         }
     }
 
@@ -280,15 +344,11 @@ impl Interpreter {
         Ok(())
     }
 
-    fn evaluate(&mut self, expr: &Rc<Expr>) -> Result<Literal, LoxError> {
-        expr.accept(self)
+    pub fn globals(&self) -> Rc<RefCell<Environment>> {
+        self.globals.clone()
     }
 
-    fn execute(&mut self, stmt: &Stmt) -> Result<(), LoxError> {
-        stmt.accept(self)
-    }
-
-    fn execute_block(
+    pub fn execute_block(
         &mut self,
         statements: &Vec<Stmt>,
         environment: Environment,
@@ -303,6 +363,14 @@ impl Interpreter {
         self.environment = previous;
 
         result
+    }
+
+    fn evaluate(&mut self, expr: &Rc<Expr>) -> Result<Literal, LoxError> {
+        expr.accept(self)
+    }
+
+    fn execute(&mut self, stmt: &Stmt) -> Result<(), LoxError> {
+        stmt.accept(self)
     }
 
     fn is_truthy(&self, literal: &Literal) -> bool {
