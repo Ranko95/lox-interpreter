@@ -47,7 +47,7 @@ impl LoxCallable for LoxFunction {
             Ok(_) => {}
             Err(e) => match e {
                 LoxError::ReturnValue { value } => return Ok(value),
-                _ => {}
+                _ => return Err(e),
             },
         }
 
