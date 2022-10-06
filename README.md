@@ -14,7 +14,7 @@ An overview of the lox language can be found [here](http://www.craftinginterpret
 - [X] Lexical scope
 - [X] Environment chains for storing variables
 - [X] Control flow
-- [ ] Functions with parameters
+- [X] Functions with parameters
 - [ ] Closures
 - [ ] Static variable resolution and error detection
 - [ ] Classes

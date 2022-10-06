@@ -43,7 +43,13 @@ impl LoxCallable for LoxFunction {
             environment.define(param.lexeme.to_owned(), arg.clone());
         }
 
-        interpreter.execute_block(&self.body, environment);
+        match interpreter.execute_block(&self.body, environment) {
+            Ok(_) => {}
+            Err(e) => match e {
+                LoxError::ReturnValue { value } => return Ok(value),
+                _ => {}
+            },
+        }
 
         Ok(Literal::Nil)
     }

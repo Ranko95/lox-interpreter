@@ -1,10 +1,11 @@
-use crate::{token::Token, token_type::TokenType};
+use crate::{literal::Literal, token::Token, token_type::TokenType};
 
 pub enum LoxError {
     ScanError { line: u32, message: String },
     ParseError { token: Token, message: String },
     RuntimeError { token: Token, message: String },
     SystemError { message: String },
+    ReturnValue { value: Literal },
 }
 
 impl LoxError {
@@ -30,6 +31,10 @@ impl LoxError {
         let error = LoxError::SystemError { message };
         error.report();
         error
+    }
+
+    pub fn return_value(value: Literal) -> LoxError {
+        LoxError::ReturnValue { value }
     }
 
     fn report(&self) {
@@ -64,6 +69,7 @@ impl LoxError {
             LoxError::SystemError { message } => {
                 eprintln!("System Error: {message}");
             }
+            _ => {}
         }
     }
 }

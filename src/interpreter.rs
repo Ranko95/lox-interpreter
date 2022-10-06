@@ -285,7 +285,11 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
     }
 
     fn visit_return_stmt(&mut self, stmt: &ReturnStmt) -> Result<(), LoxError> {
-        todo!()
+        if let Some(value) = &stmt.value {
+            Err(LoxError::return_value(self.evaluate(value)?))
+        } else {
+            Err(LoxError::return_value(Literal::Nil))
+        }
     }
 
     fn visit_var_stmt(&mut self, stmt: &VarStmt) -> Result<(), LoxError> {
