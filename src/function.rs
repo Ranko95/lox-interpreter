@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::fmt::Display;
 use std::rc::Rc;
 
@@ -14,14 +15,19 @@ pub struct LoxFunction {
     name: Token,
     params: Vec<Token>,
     body: Rc<Vec<Stmt>>,
+    closure: Rc<RefCell<Environment>>,
 }
 
 impl LoxFunction {
-    pub fn new(declaration: &FunctionStmt) -> LoxFunction {
+    pub fn new(
+        declaration: &FunctionStmt,
+        closure: Rc<RefCell<Environment>>,
+    ) -> LoxFunction {
         LoxFunction {
             name: declaration.name.to_owned(),
             params: declaration.params.to_owned(),
             body: Rc::clone(&declaration.body),
+            closure,
         }
     }
 }
@@ -37,7 +43,7 @@ impl LoxCallable for LoxFunction {
         arguments: Vec<Literal>,
     ) -> Result<Literal, LoxError> {
         let mut environment =
-            Environment::new_with_enclosing(interpreter.globals());
+            Environment::new_with_enclosing(self.closure.clone());
 
         for (param, arg) in self.params.iter().zip(arguments.iter()) {
             environment.define(param.lexeme.to_owned(), arg.clone());

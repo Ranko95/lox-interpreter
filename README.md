@@ -1,4 +1,4 @@
-# Lox TREE-WALK Interpreter
+# Lox tree-walk Interpreter
 
 Following the Robert Nystrom book [Crafting Interpreters](http://www.craftinginterpreters.com/), in Rust.
 
@@ -15,7 +15,7 @@ An overview of the lox language can be found [here](http://www.craftinginterpret
 - [X] Environment chains for storing variables
 - [X] Control flow
 - [X] Functions with parameters
-- [ ] Closures
+- [X] Closures
 - [ ] Static variable resolution and error detection
 - [ ] Classes
 - [ ] Constructors
