@@ -13,6 +13,7 @@ mod literal;
 mod lox;
 mod native_functions;
 mod parser;
+mod resolver;
 mod scanner;
 mod stmt;
 mod token;

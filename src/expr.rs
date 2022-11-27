@@ -3,7 +3,7 @@ use std::rc::Rc;
 use crate::literal::Literal;
 use crate::token::Token;
 
-#[derive(Debug)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub enum Expr {
     Assign(AssignExpr),
     Binary(BinaryExpr),
@@ -30,7 +30,7 @@ impl Expr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct AssignExpr {
     pub name: Token,
     pub value: Rc<Expr>,
@@ -46,7 +46,7 @@ impl AssignExpr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct BinaryExpr {
     pub left: Rc<Expr>,
     pub operator: Token,
@@ -63,11 +63,16 @@ impl BinaryExpr {
     }
 
     pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
-        visitor.visit_binary_expr(self)
+        let wrapper = Rc::new(Expr::Binary(BinaryExpr::new(
+            self.left,
+            self.operator,
+            self.right,
+        )));
+        visitor.visit_binary_expr(wrapper, self)
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct CallExpr {
     pub callee: Rc<Expr>,
     pub paren: Token,
@@ -92,7 +97,7 @@ impl CallExpr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct GroupingExpr {
     pub expression: Rc<Expr>,
 }
@@ -107,7 +112,7 @@ impl GroupingExpr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct LiteralExpr {
     pub value: Option<Literal>,
 }
@@ -122,7 +127,7 @@ impl LiteralExpr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct LogicalExpr {
     pub left: Rc<Expr>,
     pub operator: Token,
@@ -147,7 +152,7 @@ impl LogicalExpr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct UnaryExpr {
     pub operator: Token,
     pub right: Rc<Expr>,
@@ -163,7 +168,7 @@ impl UnaryExpr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct VariableExpr {
     pub name: Token,
 }
@@ -174,17 +179,18 @@ impl VariableExpr {
     }
 
     pub fn accept<T>(&self, visitor: &dyn ExprVisitor<T>) -> T {
-        visitor.visit_variable_expr(self)
+        let wrapper = Rc::new(Expr::Variable(VariableExpr::new(self.name)));
+        visitor.visit_variable_expr(wrapper, self)
     }
 }
 
 pub trait ExprVisitor<T> {
-    fn visit_binary_expr(&mut self, expr: &BinaryExpr) -> T;
-    fn visit_grouping_expr(&mut self, expr: &GroupingExpr) -> T;
-    fn visit_literal_expr(&self, expr: &LiteralExpr) -> T;
-    fn visit_logical_exp(&mut self, expr: &LogicalExpr) -> T;
-    fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> T;
-    fn visit_variable_expr(&self, expr: &VariableExpr) -> T;
-    fn visit_assignment_expr(&mut self, expr: &AssignExpr) -> T;
-    fn visit_call_expr(&mut self, expr: &CallExpr) -> T;
+    fn visit_binary_expr(&mut self, wrapper: Rc<Expr>, expr: &BinaryExpr) -> T;
+    fn visit_grouping_expr(&mut self, wrapper: Rc<Expr>, expr: &GroupingExpr) -> T;
+    fn visit_literal_expr(&self, wrapper: Rc<Expr>, expr: &LiteralExpr) -> T;
+    fn visit_logical_exp(&mut self, wrapper: Rc<Expr>, expr: &LogicalExpr) -> T;
+    fn visit_unary_expr(&mut self, wrapper: Rc<Expr>, expr: &UnaryExpr) -> T;
+    fn visit_variable_expr(&self, wrapper: Rc<Expr>, expr: &VariableExpr) -> T;
+    fn visit_assignment_expr(&mut self, wrapper: Rc<Expr>, expr: &AssignExpr) -> T;
+    fn visit_call_expr(&mut self, wrapper: Rc<Expr>, expr: &CallExpr) -> T;
 }

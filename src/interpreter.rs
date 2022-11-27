@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::environment::Environment;
@@ -20,6 +21,7 @@ use crate::token_type::TokenType;
 pub struct Interpreter {
     globals: Rc<RefCell<Environment>>,
     environment: Rc<RefCell<Environment>>,
+    locals: HashMap<Rc<Expr>, usize>,
 }
 
 impl ExprVisitor<Result<Literal, LoxError>> for Interpreter {
@@ -220,17 +222,7 @@ impl ExprVisitor<Result<Literal, LoxError>> for Interpreter {
         &self,
         expr: &VariableExpr,
     ) -> Result<Literal, LoxError> {
-        let value = self.environment.borrow().get(expr.name.clone())?;
-        match value {
-            Literal::NilImplicit => {
-                let error = self.error(
-                    &expr.name,
-                    "Variable was not explicitly initialized".to_string(),
-                );
-                Err(error)
-            }
-            _ => Ok(value),
-        }
+        self.look_up_variable(expr.name.clone(), expr)
     }
 
     fn visit_assignment_expr(
@@ -334,6 +326,7 @@ impl Interpreter {
         Interpreter {
             globals,
             environment,
+            locals: HashMap::new(),
         }
     }
 
@@ -369,6 +362,10 @@ impl Interpreter {
         result
     }
 
+    pub fn resolve(&mut self, expr: Rc<Expr>, depth: usize) {
+        self.locals.insert(expr, depth);
+    }
+
     fn evaluate(&mut self, expr: &Rc<Expr>) -> Result<Literal, LoxError> {
         expr.accept(self)
     }
@@ -383,6 +380,20 @@ impl Interpreter {
             Literal::Bool(v) => *v,
             _ => true,
         }
+    }
+
+    fn look_up_variable(
+        &self,
+        name: Token,
+        expr: &Expr,
+    ) -> Result<Literal, LoxError> {
+        let distance = self.locals.get(expr);
+
+        if let Some(d) = distance {
+            todo!()
+        }
+
+        self.globals.borrow().get(name)
     }
 
     fn error(&self, token: &Token, message: String) -> LoxError {
